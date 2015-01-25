@@ -1,0 +1,34 @@
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-clase=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="Flat-UI-master/dist/css/flat-ui.min.css">
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="navbar navbar-inverse navbar-embossed">
+        <div class="navbar-header">
+          <div class="navbar-brand">Room</div>
+        </div>
+      </div>
+      <h2>
+        <span class="fui-power"></span>
+        スイッチ
+      </h2>
+      <div class="text-center">
+        <p><a class="air-conditioner-switch btn btn-primary btn-lg" href="javascript:void(0);">エアコン</a></p>
+        <script>
+          $('.air-conditioner-switch').click(function(){
+          $.get('/room/handler/touch', function(data){
+          console.log('get', data)
+          })
+          })
+        </script>
+      </div>
+    </div>
+  </body>
+</html>
