@@ -1,0 +1,3 @@
+[submodule "network/Flat-UI"]
+	path = network/Flat-UI
+	url = git@github.com:designmodo/Flat-UI.git
