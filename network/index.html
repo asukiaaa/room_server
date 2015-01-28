@@ -23,7 +23,7 @@
         <p><a class="air-conditioner-switch btn btn-primary btn-lg" href="javascript:void(0);">エアコン</a></p>
         <script>
           $('.air-conditioner-switch').click(function(){
-          $.get('/room/handler/touch', function(data){
+          $.get('handler/touch', function(data){
           console.log('get', data)
           })
           })

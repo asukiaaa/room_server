@@ -1,48 +1,29 @@
 #!/usr/bin/python
 # coding: UTF-8
 
-###########################################################################
-#  (C) Tokyo Cosmos Electric, Inc. (TOCOS) - all rights reserved.
-# 利用条件:
-#   - 本ソースコードは、別途ソースコードライセンス記述が無い限り東京コスモス電機が著作権を
-#     保有しています。
-#   - 本ソースコードは、無保証・無サポートです。本ソースコードや生成物を用いたいかなる損害
-#     についても東京コスモス電機は保証致しません。不具合等の報告は歓迎いたします。
-#   - 本ソースコードは、東京コスモス電機が販売する TWE シリーズと共に実行する前提で公開
-#     しています。
-###########################################################################
-
-### TWE-Lite 標準アプリケーションを読み出すスクリプト
-# ※ 本スクリプトは読み出し専用で、読み書き双方を行うには複数スレッドによる処理が必要になります。
-
+import socket
+import json
+import yaml
 from serial import *
 from sys import stdout, stdin, stderr, exit
-import threading
 from datetime import datetime, timedelta
 
 recomended_to_print = False
 
-class Tocos:
+class Twelite:
     def __init__(self, serial_port_name):
-        # シリアルポートを開く
         try:
             self.serial_port = Serial(serial_port_name, 115200)
             print "open serial port: %s" % sys.argv[1]
         except:
             print "cannot open serial port: %s" % sys.argv[1]
             exit(1)
-
-        # 値の初期化
         self.digital_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
         self.digital_on_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
-        self.analog_values = {}
+        self.analog_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
+        self.analog_reload_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
 
-        #t1=threading.Thread(target=self.upload)
-        #t1.setDeamon(True)
-        #t1.start()
-        
     def read_digital_values_from_hex(self, hex_data):
-        # DI1..4 のデータ
         dibm = hex_data[16]
         dibm_chg = hex_data[17]
         di = {} # 現在の状態
@@ -53,7 +34,6 @@ class Tocos:
             dibm >>= 1
             dibm_chg >>= 1
             pass
-        #print "  DI1=%d/%d  DI2=%d/%d  DI3=%d/%d  DI4=%d/%d" % (di[1], di_chg[1], di[2], di_chg[2], di[3], di_chg[3], di[4], di_chg[4])
         return di
 
     def read_analog_values_from_hex(self, hex_data):
@@ -69,7 +49,6 @@ class Tocos:
                 # 補正ビットを含めた計算
                 ad[i] = ((av * 4) + (er & 0x3)) * 4
             er >>= 2
-        #print "  AD1=%04d AD2=%04d AD3=%04d AD4=%04d [mV]" % (ad[1], ad[2], ad[3], ad[4])
         return ad
 
     def upload_digital_values(self):
@@ -77,7 +56,7 @@ class Tocos:
         for index, digital_value in new_digital_values.items():
             if digital_value == 1:
                 self.digital_on_at[index] = datetime.now()
-            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(seconds = 1):
+            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(microseconds = 500000): #0.5sec
                 self.digital_values[index] = 1
             else:
                 self.digital_values[index] = 0
@@ -94,13 +73,11 @@ class Tocos:
 
     def upload(self):
         line = self.serial_port.readline().rstrip() # １ライン単位で読み出し、末尾の改行コードを削除（ブロッキング読み出し）
-    
         if len(line) > 0 and line[0] == ':':
             True
             #print "\n%s" % line
         else:
             return False
-    
         lst = map(ord, line[1:].decode('hex')) # HEX文字列を文字列にデコード後、各々 ord() したリストに変換
         csum = sum(lst) & 0xff # チェックサムは 8bit 計算で全部足して　0 なら OK
         lst.pop() # チェックサムをリストから削除
@@ -116,13 +93,11 @@ class Tocos:
         else:
             return False
 
-    # 0x81 メッセージの解釈と表示
     def printPayload(self):
         l = self.hex_data
         if len(l) != 23: return False # データサイズのチェック
 
         ladr = l[5] << 24 | l[6] << 16 | l[7] << 8 | l[8]
-        #print "  command   = 0x%02x (data arrival)" % l[1]
         print "  src       = 0x%02x" % l[0]
         print "  src long  = 0x%08x" % ladr
         print "  dst       = 0x%02x" % l[9]
@@ -145,9 +120,9 @@ class Tocos:
         command = '788001' + value_hex_2digit + pin_hex_2digit + '0000000000000000'
         check_sum = self.check_sum_of(command)
         self.serial_port.write(":" + command + check_sum + "\r\n")
-        #command = '78800100040000000000000000' # set 3 as 0
-        #print self.check_sum_of(command)
-        #self.serial_port.write(":7880010004000000000000000003\r\n") # set 3 as 0
+
+    def switch(self, digitals, analogs):
+        'needed to make'
 
     def check_sum_of(self, command):
         byte_list = {}
@@ -163,29 +138,41 @@ class Tocos:
         else:
             return -1
 
-#        
-# メインの処理
+#
+# set up
 #
         
-# パラメータの確認
-#   第一引数: シリアルポート名
 if len(sys.argv) < 2:
     print "%s {serial port name}" % sys.argv[0]
     exit(1)
+#TODO auto find tocos device port name
 
-myTocostick = Tocos(sys.argv[1])
-if len(sys.argv) > 2 and sys.argv[2] == 'print':
+myTocostick = Twelite(sys.argv[1])
+if '-p' in sys.argv:
     print 'set recomended_to_print True'
     global recomended_to_print
     recomended_to_print = True
 
+#
+# main loop
+#
 while True:
     if myTocostick.upload():
-        if myTocostick.analog_value(4) > 100:
-            myTocostick.digital_switch(2, 1)
-        else:
-            myTocostick.digital_switch(2, 0)
-	if myTocostick.digital_values[1] == 1:
-	    myTocostick.digital_switch(1, 1)
-	else:
-	    myTocostick.digital_switch(1, 0)	
+        #print myTocostick.digital_values
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        soc.connect(('0.0.0.0', 50007))
+        sent_data = {
+            'twelite_data': {
+                'digitals': myTocostick.digital_values,
+                'analogs': myTocostick.analog_values
+            }
+        }
+        soc.send( json.dumps(sent_data) )
+        #print 'Sended', sent_data
+        string_data = soc.recv(1024)
+        received_data = yaml.load(string_data)
+        #print 'Received', received_data
+        if 'new_values' in received_data.keys() and 'digitals' in received_data['new_values'].keys():
+            for key, value in received_data['new_values']['digitals'].items():
+                myTocostick.digital_switch(int(key), value)
+        soc.close()
