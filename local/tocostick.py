@@ -7,16 +7,32 @@ import yaml
 from serial import *
 from sys import stdout, stdin, stderr, exit
 from datetime import datetime, timedelta
+import os
+
+TWELITE_DEVICE_DIR = '/dev/serial/by-id'
+HOST = '0.0.0.0'
+PORT = '50007'
 
 recomended_to_print = False
+if '-p' in sys.argv:
+    print 'set recomended_to_print True'
+    recomended_to_print = True
 
 class Twelite:
-    def __init__(self, serial_port_name):
+    def __init__(self, serial_port_path = ''):
+        if serial_port_path == '':
+            for file_name in os.listdir(TWELITE_DEVICE_DIR):
+                if 'TWE-Lite' in file_name:
+                    serial_port_path = TWELITE_DEVICE_DIR + '/' + file_name
+                    break;
+        if serial_port_path == '':
+            print 'Could not find twelite device'
+            exit(0)
         try:
-            self.serial_port = Serial(serial_port_name, 115200)
-            print "open serial port: %s" % sys.argv[1]
+            self.serial_port = Serial(serial_port_path, 115200)
+            print "open serial port: " + serial_port_path
         except:
-            print "cannot open serial port: %s" % sys.argv[1]
+            print "cannot open serial port: " + serial_port_path
             exit(1)
         self.digital_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
         self.digital_on_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
@@ -37,7 +53,6 @@ class Twelite:
         return di
 
     def read_analog_values_from_hex(self, hex_data):
-        # AD1..4 のデータ
         ad = {}
         er = hex_data[22]
         for i in range(1,5):
@@ -72,7 +87,7 @@ class Twelite:
         self.upload_analog_values()
 
     def upload(self):
-        line = self.serial_port.readline().rstrip() # １ライン単位で読み出し、末尾の改行コードを削除（ブロッキング読み出し）
+        line = self.serial_port.readline().rstrip()
         if len(line) > 0 and line[0] == ':':
             True
             #print "\n%s" % line
@@ -141,17 +156,7 @@ class Twelite:
 #
 # set up
 #
-        
-if len(sys.argv) < 2:
-    print "%s {serial port name}" % sys.argv[0]
-    exit(1)
-#TODO auto find tocos device port name
-
-myTocostick = Twelite(sys.argv[1])
-if '-p' in sys.argv:
-    print 'set recomended_to_print True'
-    global recomended_to_print
-    recomended_to_print = True
+myTocostick = Twelite()
 
 #
 # main loop
@@ -160,7 +165,7 @@ while True:
     if myTocostick.upload():
         #print myTocostick.digital_values
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        soc.connect(('0.0.0.0', 50007))
+        soc.connect((HOST, PORT))
         sent_data = {
             'twelite_data': {
                 'digitals': myTocostick.digital_values,

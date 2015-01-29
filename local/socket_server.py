@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# coding: UTF-8
+
 import socket
 import sys
 import time
@@ -5,7 +8,7 @@ import json
 import yaml
 import datetime
 
-HOST = None
+HOST = '0.0.0.0'
 PORT = 50007
 s = None
 
