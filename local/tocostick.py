@@ -11,7 +11,7 @@ import os
 
 TWELITE_DEVICE_DIR = '/dev/serial/by-id'
 HOST = '0.0.0.0'
-PORT = '50007'
+PORT = 50007
 
 recomended_to_print = False
 if '-p' in sys.argv:

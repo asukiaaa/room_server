@@ -1,8 +1,8 @@
-# 2015.01 by asukiaaa
+#### For Raspberry pi and TOCOS TWE-Lite
 
-### copy this repo to your pi
+### clone this repo to your pi
 
-git clone git@github.com:asukiaaa/room_server.git /home/pi/
+git clone git@github.com:asukiaaa/room_server.git /home/pi/room_server
 git submodule init
 git submodule update
 
@@ -33,6 +33,7 @@ sudo apt-get install apache2 libapache2-mod-python
 ## then
 sudo service apache2 reload
 
+
 ### create symlink to /var/www
 
 cd /var/www
@@ -40,10 +41,10 @@ ln -s /home/pi/room_server/network ./room
 
 
 ### add shell to auto start
+
 ## add following line
-## to /etc/rc.local
-# sh /home/pi/room_server/local/start_after_boot.sh # added before exit 0
-# exit 0
+## to /etc/rc.local before exit 0
+# sh /home/pi/room_server/local/start_after_boot.sh
 
 ## or command
 sudo sed -i '/^exit 0/ish \/home\/pi\/room_server\/local\/start_after_boot.sh' /etc/rc.local
