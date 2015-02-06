@@ -79,6 +79,15 @@ class Room:
         new_digital_values['1'] = 1 if self.needed_to_touch_solenoid() else 0
         return { 'digitals': new_digital_values, 'analogs': new_analog_values }
 
+    def temperture_near_face(self):
+        return self._temperture_from_mv(self.twelite['analogs']['3'])
+
+    def temperture_near_floor(self):
+        return self._temperture_from_mv(self.twelite['analogs']['2'])
+
+    def _temperture_from_mv(self, value_mv):
+        return ( value_mv - 600 ) / 10
+
 reivoRoom = Room()
 
 while True:
@@ -100,6 +109,8 @@ while True:
         if request_type == 'status':
             sending_data['air_conditioner'] = 1 if reivoRoom.air_conditioner_is_on() else 0
             sending_data['values'] = reivoRoom.twelite
+            sending_data['temperture_near_face'] = reivoRoom.temperture_near_face()
+            sending_data['temperture_near_floor'] = reivoRoom.temperture_near_floor()
     #print 'send', sending_data
     conn.send( json.dumps(sending_data, sort_keys=True, indent=2, default=datetime_handler) )
     conn.close

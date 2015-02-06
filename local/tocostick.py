@@ -58,7 +58,7 @@ class Twelite:
         for i in range(1,5):
             av = hex_data[i + 18 - 1]
             if av == 0xFF:
-                # ADポートが未使用扱い(おおむね2V以下)なら -1
+                # ADポートが未使用扱い(0xFF)なら -1
                 ad[i] = -1
             else:
                 # 補正ビットを含めた計算
