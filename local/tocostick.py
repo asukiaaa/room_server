@@ -35,9 +35,7 @@ class Twelite:
             print "cannot open serial port: " + serial_port_path
             exit(1)
         self.digital_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
-        self.digital_on_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
         self.analog_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
-        self.analog_reload_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
 
     def read_digital_values_from_hex(self, hex_data):
         dibm = hex_data[16]
@@ -66,27 +64,11 @@ class Twelite:
             er >>= 2
         return ad
 
-    def upload_digital_values(self):
-        new_digital_values = self.read_digital_values_from_hex(self.hex_data)
-        for index, digital_value in new_digital_values.items():
-            if digital_value == 1:
-                self.digital_on_at[index] = datetime.now()
-            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(microseconds = 500000): #0.5sec
-                self.digital_values[index] = 1
-            else:
-                self.digital_values[index] = 0
+    def upload_values(self):
+        self.digital_values = self.read_digital_values_from_hex(self.hex_data)
+        self.analog_values = self.read_analog_values_from_hex(self.hex_data)
 
-    def upload_analog_values(self):
-        new_analog_values = self.read_analog_values_from_hex(self.hex_data)
-        for index, analog_value in new_analog_values.items():
-            if analog_value != -1:
-                self.analog_values[index] = analog_value
-
-    def upload_self_values(self):
-        self.upload_digital_values()
-        self.upload_analog_values()
-
-    def upload(self):
+    def listen(self):
         line = self.serial_port.readline().rstrip()
         if len(line) > 0 and line[0] == ':':
             True
@@ -98,7 +80,7 @@ class Twelite:
         lst.pop() # チェックサムをリストから削除
         if csum == 0 and lst[1] == 0x81:
             self.hex_data = lst
-            self.upload_self_values()
+            self.upload_values()
             if recomended_to_print:
                 self.printPayload()
                 print self.digital_on_at
@@ -162,20 +144,19 @@ myTocostick = Twelite()
 # main loop
 #
 while True:
-    if myTocostick.upload():
+    if myTocostick.listen():
         #print myTocostick.digital_values
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect((HOST, PORT))
-        sent_data = {
+        sending_data = {
             'twelite_data': {
                 'digitals': myTocostick.digital_values,
                 'analogs': myTocostick.analog_values
             }
         }
-        soc.send( json.dumps(sent_data) )
-        #print 'Sended', sent_data
-        string_data = soc.recv(1024)
-        received_data = yaml.load(string_data)
+        soc.send( json.dumps(sending_data) )
+        #print 'Sended', sending_data
+        received_data = yaml.load( soc.recv(1024) )
         #print 'Received', received_data
         if 'new_values' in received_data.keys() and 'digitals' in received_data['new_values'].keys():
             for key, value in received_data['new_values']['digitals'].items():
