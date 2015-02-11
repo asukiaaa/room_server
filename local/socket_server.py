@@ -119,7 +119,7 @@ class Room:
 reivoRoom = Room()
 
 while True:
-    print json.dumps(reivoRoom.status(), sort_keys=True, indent=2, default=datetime_handler)
+    #print json.dumps(reivoRoom.status(), sort_keys=True, indent=2, default=datetime_handler)
     conn, addr = s.accept()
     received_hash = yaml.load( conn.recv(1024) )
     #print 'received', received_hash
