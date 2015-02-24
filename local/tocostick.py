@@ -35,7 +35,18 @@ class Twelite:
             print "cannot open serial port: " + serial_port_path
             exit(1)
         self.digital_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
+        self.digital_on_at = { 1: 0, 2: 0, 3: 0, 4: 0 }
         self.analog_values = { 1: 0, 2: 0, 3: 0, 4: 0 }
+
+    def upload_digital_values(self):
+        new_digital_values = self.read_digital_values_from_hex(self.hex_data)
+        for index, digital_value in new_digital_values.items():
+            if digital_value == 1:
+                self.digital_on_at[index] = datetime.now()
+            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(microseconds = 500000): #0.5sec
+                self.digital_values[index] = 1
+            else:
+                self.digital_values[index] = 0
 
     def read_digital_values_from_hex(self, hex_data):
         dibm = hex_data[16]
@@ -65,7 +76,7 @@ class Twelite:
         return ad
 
     def upload_values(self):
-        self.digital_values = self.read_digital_values_from_hex(self.hex_data)
+        self.upload_digital_values()
         self.analog_values = self.read_analog_values_from_hex(self.hex_data)
 
     def listen(self):
