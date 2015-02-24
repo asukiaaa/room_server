@@ -12,9 +12,9 @@ HOST = '0.0.0.0'
 PORT = 50007
 s = None
 
-AIR_CONDITIONER_SENSOR_PORT  = '1'
 TERMO_SENSOR_NEAR_FLOOR_PORT = '2'
 TERMO_SENSOR_NEAR_FACE_PORT  = '3'
+AIR_CONDITIONER_SENSOR_PORT  = '4'
 
 # これをjson変換時にdefaultに渡すことでdatatimeを期待撮りに変換
 datetime_handler = lambda obj : (
