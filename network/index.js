@@ -1,6 +1,10 @@
-$(document).on('click', '.air-conditioner-switch', function(){
+$(function(){
   reload_temperature()
+})
+
+$(document).on('click', '.air-conditioner-switch', function(){
   $.get('handler/touch', function(data){
+    reload_temperature()
     console.log('touched')
   })
 })
