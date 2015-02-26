@@ -12,6 +12,15 @@ HOST = '0.0.0.0'
 PORT = 50007
 s = None
 
+# signals to twelites
+AIR_CONDITIONER_SWITCH = '1'
+CIRCURATOR_SWITCH = '2'
+
+# signals from twelites
+# digitals
+AIR_CONDITIONER_CONTROLLER = '1'
+
+# analogs
 TERMO_SENSOR_NEAR_FLOOR_PORT = '2'
 TERMO_SENSOR_NEAR_FACE_PORT  = '3'
 AIR_CONDITIONER_SENSOR_PORT  = '4'
@@ -77,14 +86,14 @@ class Room:
             return False
         return self.twelite['analogs'][AIR_CONDITIONER_SENSOR_PORT] > 100
 
-    def needed_to_touch_solenoid(self):
-        return self.twelite['digitals']['1'] == 1
+    def needed_to_switch_air_conditioner(self):
+        return self.twelite['digitals'][AIR_CONDITIONER_CONTROLLER] == 1
 
     def new_twelite_values(self):
         new_digital_values = {}
         new_analog_values = {}
-        new_digital_values['2'] = 1 if self.air_conditioner_is_on() else 0
-        new_digital_values['1'] = 1 if self.needed_to_touch_solenoid() else 0
+        new_digital_values[CIRCURATOR_SWITCH]      = 1 if self.air_conditioner_is_on() else 0
+        new_digital_values[AIR_CONDITIONER_SWITCH] = 1 if self.needed_to_switch_air_conditioner() else 0
         return { 'digitals': new_digital_values, 'analogs': new_analog_values }
 
     def temperature_near_face(self):
