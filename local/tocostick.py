@@ -30,7 +30,7 @@ class Twelite:
             exit(0)
         try:
             self.serial_port = Serial(serial_port_path, 115200)
-            print "open serial port: " + serial_port_path
+            print "opened serial port: " + serial_port_path
         except:
             print "cannot open serial port: " + serial_port_path
             exit(1)
@@ -43,7 +43,7 @@ class Twelite:
         for index, digital_value in new_digital_values.items():
             if digital_value == 1:
                 self.digital_on_at[index] = datetime.now()
-            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(microseconds = 500000): #0.5sec
+            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(seconds = 1): #1sec
                 self.digital_values[index] = 1
             else:
                 self.digital_values[index] = 0
@@ -120,17 +120,25 @@ class Twelite:
 
         return True
 
-    def digital_switch(self, pin_number, value):
-        pin_hex_2digit = "{:02x}".format(pin_number)
-        value_hex_2digit = '00'
-        if value > 0:
-            value_hex_2digit = pin_hex_2digit
-        command = '788001' + value_hex_2digit + pin_hex_2digit + '0000000000000000'
+    def switch(self, digitals = {}, analogs = {}):
+        pins_hex_int   = 0
+        values_hex_int = 0
+        for pin_number in [1, 2, 3, 4]:
+            # pinが設定対象でなければスキップ
+            if (not str(pin_number) in digitals.keys()):
+                continue
+            target_pin_hex_int = 2 ** (pin_number - 1)
+            pins_hex_int += target_pin_hex_int
+            if (digitals[str(pin_number)] == 1):
+                values_hex_int += target_pin_hex_int
+        # 0-255の16進数を2桁で取得
+        pins_hex_2digit   = hex(pins_hex_int + 256)[-2:]
+        values_hex_2digit = hex(values_hex_int + 256)[-2:]
+        command = '788001' + values_hex_2digit + pins_hex_2digit + '0000000000000000'
         check_sum = self.check_sum_of(command)
         self.serial_port.write(":" + command + check_sum + "\r\n")
 
-    def switch(self, digitals, analogs):
-        'needed to make'
+        'needed to make process for analogs'
 
     def check_sum_of(self, command):
         byte_list = {}
@@ -170,6 +178,5 @@ while True:
         received_data = yaml.load( soc.recv(1024) )
         #print 'Received', received_data
         if 'new_values' in received_data.keys() and 'digitals' in received_data['new_values'].keys():
-            for key, value in received_data['new_values']['digitals'].items():
-                myTocostick.digital_switch(int(key), value)
+            myTocostick.switch(received_data['new_values']['digitals'])
         soc.close()
