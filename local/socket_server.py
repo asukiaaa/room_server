@@ -12,6 +12,8 @@ HOST = '0.0.0.0'
 PORT = 50007
 s = None
 
+DIGITAL_ON_BUFFER_TIME = datetime.timedelta(seconds = 1)
+
 # signals to twelites
 AIR_CONDITIONER_SWITCH = '1'
 CIRCURATOR_SWITCH = '2'
@@ -70,7 +72,7 @@ class Room:
                 if twelite_data['digitals'][key] == 1:
                     self.twelite['digitals_on_at'][key] = datetime.datetime.now()
                 uploaded_time = self.twelite['digitals_on_at'][key]
-                if uploaded_time != 0 and datetime.datetime.now() - uploaded_time < datetime.timedelta(microseconds = 500000): # 0.5sec
+                if uploaded_time != 0 and datetime.datetime.now() - uploaded_time < DIGITAL_ON_BUFFER_TIME:
                     self.twelite['digitals'][key] = 1
                 else:
                     self.twelite['digitals'][key] = 0
