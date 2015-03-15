@@ -13,6 +13,8 @@ TWELITE_DEVICE_DIR = '/dev/serial/by-id'
 HOST = '0.0.0.0'
 PORT = 50007
 
+DIGITAL_ON_BUFFER_TIME = timedelta(seconds = 1)  
+
 recomended_to_print = False
 if '-p' in sys.argv:
     print 'set recomended_to_print True'
@@ -43,7 +45,7 @@ class Twelite:
         for index, digital_value in new_digital_values.items():
             if digital_value == 1:
                 self.digital_on_at[index] = datetime.now()
-            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < timedelta(seconds = 1): #1sec
+            if self.digital_on_at[index] != 0 and datetime.now() - self.digital_on_at[index] < DIGITAL_ON_BUFFER_TIME:
                 self.digital_values[index] = 1
             else:
                 self.digital_values[index] = 0
