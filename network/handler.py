@@ -11,7 +11,7 @@ def index(req):
   return _socket_send( json.dumps({'request': 'status'}) )
 
 def touch(req):
-  sending_data = {'twelite_data': { 'digitals': {'1': 1 } } }
+  sending_data = {'uploading_data': { 'air_conditioner_button': True } }
   return _socket_send( json.dumps(sending_data) )
 
 def _socket_send(data_to_send):

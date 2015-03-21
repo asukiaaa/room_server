@@ -156,6 +156,12 @@ class Twelite:
         else:
             return -1
 
+    def temperature_near_floor(self):
+        return self._temperature_of(self.analog_values[2])
+
+    def _temperature_of(self, value_mv):
+        return ( value_mv - 600 ) / 10
+
 #
 # set up
 #
@@ -170,9 +176,8 @@ while True:
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect((HOST, PORT))
         sending_data = {
-            'twelite_data': {
-                'digitals': myTocostick.digital_values,
-                'analogs': myTocostick.analog_values
+            'uploading_data': {
+                'temperature_near_floor': myTocostick.temperature_near_floor(),
             }
         }
         soc.send( json.dumps(sending_data) )
@@ -181,6 +186,8 @@ while True:
         received_data = yaml.load( soc.recv(1024) )
         if recomended_to_print:
             print 'Received', received_data
-        if 'new_values' in received_data.keys() and 'digitals' in received_data['new_values'].keys():
-            myTocostick.switch(received_data['new_values']['digitals'])
+        if 'status' in received_data.keys() and received_data['status']['circurator'] == True:
+            myTocostick.switch({ '2': 1 })
+        else:
+            myTocostick.switch({ '2': 0 })
         soc.close()

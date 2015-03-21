@@ -16,8 +16,11 @@ DIGITAL_ON_BUFFER_TIME = datetime.timedelta(seconds = 1)
 
 # uploading data
 # enumとかにして、まとめて管理したい
-AIR_CONDITIONER_STATUS = 'air_conditioner_status'
-TEMPERATURE_NEAR_FACE = 'temperature_near_face'
+AIR_CONDITIONER_LED    = 'air_conditioner_led'
+AIR_CONDITIONER_BUTTON = 'air_conditioner_button'
+TEMPERATURE_NEAR_FACE  = 'temperature_near_face'
+TEMPERATURE_NEAR_FLOOR = 'temperature_near_floor'
+CIRCURATOR             = 'circurator'
 
 # signals to twelites
 AIR_CONDITIONER_SWITCH = '1'
@@ -70,14 +73,17 @@ class Room:
 
         self.status = {}
         self.status_at = {}
-        self.status[AIR_CONDITIONER_STATUS] = 0
-        self.status_at[AIR_CONDITIONER_STATUS] = 0
+        for status_name in [AIR_CONDITIONER_LED, AIR_CONDITIONER_BUTTON, TEMPERATURE_NEAR_FLOOR, CIRCURATOR]:
+            self.status[status_name] = 0
+            self.status_at[status_name] = 0
 
     def upload(self, uploading_data):
         uploading_keys = uploading_data.keys()
-        if AIR_CONDITIONER_STATUS in uploading_keys:
-            self.status[AIR_CONDITIONER_STATUS] = uploading_data[AIR_CONDITIONER_STATUS]
-            self.status_at[AIR_CONDITIONER_STATUS] = datetime.datetime.now()
+        for status_name in [AIR_CONDITIONER_LED, TEMPERATURE_NEAR_FLOOR, AIR_CONDITIONER_BUTTON]:
+            if status_name in uploading_keys:
+                self.status[status_name] = uploading_data[status_name]
+                self.status_at[status_name] = datetime.datetime.now()
+        self.status[CIRCURATOR] = self.air_conditioner_is_on()
 
     def upload_with_twelite(self, twelite_data):
         #upload digital values
@@ -98,10 +104,10 @@ class Room:
                     self.twelite['analogs_reloaded_at'][key] = datetime.datetime.now()
 
     def air_conditioner_is_on(self):
-        uploaded_time = self.status_at[AIR_CONDITIONER_STATUS]
-        if uploaded_time == 0 or datetime.datetime.now() - uploaded_time < DIGITAL_ON_BUFFER_TIME:
+        uploaded_time = self.status_at[AIR_CONDITIONER_LED]
+        if uploaded_time == 0 or datetime.datetime.now() - uploaded_time > DIGITAL_ON_BUFFER_TIME:
             return False
-        return self.status[AIR_CONDITIONER_STATUS] > 100
+        return self.status[AIR_CONDITIONER_LED]
 
     def needed_to_switch_air_conditioner(self):
         return self.twelite['digitals'][AIR_CONDITIONER_CONTROLLER] == 1
@@ -132,11 +138,18 @@ class Room:
         else:
             return False
 
+    def filter_status(self):
+        button_uploaded_time = self.status_at[AIR_CONDITIONER_BUTTON]
+        if button_uploaded_time == 0 or datetime.datetime.now() - button_uploaded_time > DIGITAL_ON_BUFFER_TIME:
+            self.status[AIR_CONDITIONER_BUTTON] = False
+
     def get_all_status(self):
+        self.filter_status()
         status = {}
-        #status['air_conditioner'] = self.air_conditioner_is_on()
+        status['air_conditioner'] = self.air_conditioner_is_on()
         status['twelite']         = self.twelite
-        status['status']         = self.status
+        status['status']          = self.status
+        status['status_at']       = self.status_at
         status['temperatures'] = {
             'face': self.temperature_near_face(),
             'floor': self.temperature_near_floor()
@@ -151,7 +164,7 @@ while True:
     received_hash = yaml.load( conn.recv(1024) )
     #print 'received', received_hash
     sending_data = {}
-    hash_keys = received_hash.keys()
+    hash_keys = received_hash.keys() if isinstance(received_hash, dict) else []
     if 'twelite_data' in hash_keys:
         reivoRoom.upload_with_twelite(received_hash['twelite_data'])
         sending_data['status'] = 'got it'

@@ -16,12 +16,13 @@ function reload_temperature() {
     dataType: 'json',
     success: function(json) {
       console.log(json)
-      console.log(json.temperatures)
+      console.log(json.status)
       var temperature_info_zone = $('.temperatures')
       temperature_info_zone.html('')
-      for(var key in json.temperatures){
-        if(json.temperatures[key] != ''){
-          temperature_info_zone.append('<div>' + key + ': ' + json.temperatures[key] + '</div>')
+      for(var key in json.status){
+        console.log( key)
+        if( key.includes('temperature_') ){
+          temperature_info_zone.append('<div>' + key + ': ' + json.status[key] + '</div>')
         }
       } 
     }

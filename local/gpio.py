@@ -20,10 +20,10 @@ while 1:
     soc.connect((HOST, PORT))
     print ch0, ch1
     time.sleep(1)
-    air_conditioner_status = True if ch0 > 100 else False
+    air_conditioner_led = True if ch0 > 100 else False
     sending_data = {
         'uploading_data': {
-            'air_conditioner_status': air_conditioner_status
+            'air_conditioner_led': air_conditioner_led
             #'face_height_temperature': ch1
         }
     }
