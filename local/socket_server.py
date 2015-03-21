@@ -14,6 +14,11 @@ s = None
 
 DIGITAL_ON_BUFFER_TIME = datetime.timedelta(seconds = 1)
 
+# uploading data
+# enumとかにして、まとめて管理したい
+AIR_CONDITIONER_STATUS = 'air_conditioner_status'
+TEMPERATURE_NEAR_FACE = 'temperature_near_face'
+
 # signals to twelites
 AIR_CONDITIONER_SWITCH = '1'
 CIRCURATOR_SWITCH = '2'
@@ -57,13 +62,20 @@ if s is None:
 class Room:
     def __init__(self):
         self.twelite = {}
-        # 1: Solenoid, 2: Circurator
         self.twelite['digitals'] = {'1': 0, '2': 0, '3': 0, '4': 0 }
         self.twelite['digitals_on_at'] = {'1': 0, '2': 0, '3': 0, '4': 0 }
 
-        # 4: air conditioner light sensor
         self.twelite['analogs'] = {'1': 0, '2': 0, '3': 0, '4': 0 }
         self.twelite['analogs_reloaded_at'] = {'1': 0, '2': 0, '3': 0, '4': 0 }
+
+        self.status = {}
+        self.status_at = {}
+
+    def upload(self, uploading_data):
+        uploading_keys = uploading_data.keys()
+        if AIR_CONDITIONER_STATUS in uploading_keys:
+            self.status[AIR_CONDITIONER_STATUS] = uploading_data[AIR_CONDITIONER_STATUS]
+            self.status_at[AIR_CONDITIONER_STATUS] = datetime.datetime.now()
 
     def upload_with_twelite(self, twelite_data):
         #upload digital values
@@ -84,9 +96,7 @@ class Room:
                     self.twelite['analogs_reloaded_at'][key] = datetime.datetime.now()
 
     def air_conditioner_is_on(self):
-        if not self._analog_port_is_active(AIR_CONDITIONER_SENSOR_PORT):
-            return False
-        return self.twelite['analogs'][AIR_CONDITIONER_SENSOR_PORT] > 100
+        return self.status[AIR_CONDITIONER_STATUS] > 100
 
     def needed_to_switch_air_conditioner(self):
         return self.twelite['digitals'][AIR_CONDITIONER_CONTROLLER] == 1
@@ -140,6 +150,9 @@ while True:
         reivoRoom.upload_with_twelite(received_hash['twelite_data'])
         sending_data['status'] = 'got it'
         sending_data['new_values'] = reivoRoom.new_twelite_values()
+    if 'uploading_data' in hash_keys:
+        reivoRoom.upload(received_hash['uploading_data'])
+        sending_data = reivoRoom.status()
     if 'request' in hash_keys:
         request_type = received_hash['request']
         if request_type == 'status':
