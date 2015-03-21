@@ -70,6 +70,8 @@ class Room:
 
         self.status = {}
         self.status_at = {}
+        self.status[AIR_CONDITIONER_STATUS] = 0
+        self.status_at[AIR_CONDITIONER_STATUS] = 0
 
     def upload(self, uploading_data):
         uploading_keys = uploading_data.keys()
@@ -96,6 +98,9 @@ class Room:
                     self.twelite['analogs_reloaded_at'][key] = datetime.datetime.now()
 
     def air_conditioner_is_on(self):
+        uploaded_time = self.status_at[AIR_CONDITIONER_STATUS]
+        if uploaded_time == 0 or datetime.datetime.now() - uploaded_time < DIGITAL_ON_BUFFER_TIME:
+            return False
         return self.status[AIR_CONDITIONER_STATUS] > 100
 
     def needed_to_switch_air_conditioner(self):
@@ -127,10 +132,11 @@ class Room:
         else:
             return False
 
-    def status(self):
+    def get_all_status(self):
         status = {}
-        status['air_conditioner'] = self.air_conditioner_is_on()
+        #status['air_conditioner'] = self.air_conditioner_is_on()
         status['twelite']         = self.twelite
+        status['status']         = self.status
         status['temperatures'] = {
             'face': self.temperature_near_face(),
             'floor': self.temperature_near_floor()
@@ -140,7 +146,7 @@ class Room:
 reivoRoom = Room()
 
 while True:
-    #print json.dumps(reivoRoom.status(), sort_keys=True, indent=2, default=datetime_handler)
+    #print json.dumps(reivoRoom.get_all_status(), sort_keys=True, indent=2, default=datetime_handler)
     conn, addr = s.accept()
     received_hash = yaml.load( conn.recv(1024) )
     #print 'received', received_hash
@@ -152,11 +158,11 @@ while True:
         sending_data['new_values'] = reivoRoom.new_twelite_values()
     if 'uploading_data' in hash_keys:
         reivoRoom.upload(received_hash['uploading_data'])
-        sending_data = reivoRoom.status()
+        sending_data = reivoRoom.get_all_status()
     if 'request' in hash_keys:
         request_type = received_hash['request']
         if request_type == 'status':
-            sending_data = reivoRoom.status()
+            sending_data = reivoRoom.get_all_status()
     #print 'send', sending_data
     conn.send( json.dumps(sending_data, sort_keys=True, indent=2, default=datetime_handler) )
     conn.close

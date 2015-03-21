@@ -176,9 +176,11 @@ while True:
             }
         }
         soc.send( json.dumps(sending_data) )
-        #print 'Sended', sending_data
+        if recomended_to_print:
+            print 'Sended', sending_data
         received_data = yaml.load( soc.recv(1024) )
-        #print 'Received', received_data
+        if recomended_to_print:
+            print 'Received', received_data
         if 'new_values' in received_data.keys() and 'digitals' in received_data['new_values'].keys():
             myTocostick.switch(received_data['new_values']['digitals'])
         soc.close()
