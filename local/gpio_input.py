@@ -18,7 +18,6 @@ while 1:
     ch1 = mcp.analogRead(1)
     soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     soc.connect((HOST, PORT))
-    print ch0, ch1
     time.sleep(1)
     air_conditioner_led = True if ch0 > 100 else False
     sending_data = {
