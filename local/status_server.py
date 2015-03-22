@@ -7,6 +7,9 @@ import time
 import json
 import yaml
 import datetime
+import time
+from multiprocessing import Process
+import RPi.GPIO as GPIO
 
 HOST = '0.0.0.0'
 PORT = 50007
@@ -21,6 +24,13 @@ AIR_CONDITIONER_BUTTON = 'air_conditioner_button'
 TEMPERATURE_NEAR_FACE  = 'temperature_near_face'
 TEMPERATURE_NEAR_FLOOR = 'temperature_near_floor'
 CIRCURATOR             = 'circurator'
+
+# gpio pins
+AIR_CONDITIONER_BUTTON_PIN = 17 
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(AIR_CONDITIONER_BUTTON_PIN, GPIO.OUT)
 
 # これをjson変換時にdefaultに渡すことでdatatimeを期待撮りに変換
 datetime_handler = lambda obj : (
@@ -49,6 +59,11 @@ if s is None:
     print 'could not open socket'
     sys.exit(1)
 
+def air_conditioner_switcher():
+    GPIO.output(AIR_CONDITIONER_BUTTON_PIN, 1)
+    time.sleep(1)
+    GPIO.output(AIR_CONDITIONER_BUTTON_PIN, 0)
+
 class Room:
     def __init__(self):
         self.status = {}
@@ -56,6 +71,7 @@ class Room:
         for status_name in [AIR_CONDITIONER_LED, AIR_CONDITIONER_BUTTON, TEMPERATURE_NEAR_FLOOR, CIRCURATOR]:
             self.status[status_name] = 0
             self.status_at[status_name] = 0
+        
 
     def upload(self, uploading_data):
         uploading_keys = uploading_data.keys()
@@ -64,6 +80,10 @@ class Room:
                 self.status[status_name] = uploading_data[status_name]
                 self.status_at[status_name] = datetime.datetime.now()
         self.status[CIRCURATOR] = self.air_conditioner_is_on()
+        if self.status[AIR_CONDITIONER_BUTTON]:
+            self.status[AIR_CONDITIONER_BUTTON] = False
+            p = Process(target=air_conditioner_switcher)
+            p.start()
 
     def air_conditioner_is_on(self):
         uploaded_time = self.status_at[AIR_CONDITIONER_LED]
@@ -74,13 +94,7 @@ class Room:
     def _temperature_of(self, value_mv):
         return ( value_mv - 600 ) / 10
 
-    def filter_status(self):
-        button_uploaded_time = self.status_at[AIR_CONDITIONER_BUTTON]
-        if button_uploaded_time == 0 or datetime.datetime.now() - button_uploaded_time > DIGITAL_ON_BUFFER_TIME:
-            self.status[AIR_CONDITIONER_BUTTON] = False
-
     def get_all_status(self):
-        self.filter_status()
         status = {}
         status['status']          = self.status
         status['status_at']       = self.status_at
