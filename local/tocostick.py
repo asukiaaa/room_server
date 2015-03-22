@@ -122,7 +122,7 @@ class Twelite:
 
         return True
 
-    def switch(self, digitals = {}, analogs = {}):
+    def switch(self, digitals = {}):
         pins_hex_int   = 0
         values_hex_int = 0
         for pin_number in [1, 2, 3, 4]:
@@ -139,8 +139,6 @@ class Twelite:
         command = '788001' + values_hex_2digit + pins_hex_2digit + '0000000000000000'
         check_sum = self.check_sum_of(command)
         self.serial_port.write(":" + command + check_sum + "\r\n")
-
-        'needed to make process for analogs'
 
     def check_sum_of(self, command):
         byte_list = {}
