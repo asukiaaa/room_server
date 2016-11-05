@@ -19,7 +19,7 @@ sudo apt-get install python-yaml
 sudo apt-get install apache2 libapache2-mod-python
 
 ## add following lines
-## to /etc/apache2/sites-available/default 
+## to /etc/apache2/sites-available/default
 #   <Directory /var/www/>
 #     Options Indexes FollowSymLinks MultiViews
 #     AllowOverride None
